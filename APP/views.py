@@ -8,13 +8,13 @@ import base64
 import json
 from .keys import public_key, private_key
 from .serializers import PeopleSerializer
+from .models import People
 
 
 @api_view(["POST"])
 def encrypt_message(request):
     """Encrypt the incoming JSON data."""
     data = request.data
-
     try:
         # Convert the entire data to a JSON string
         message = json.dumps(data)
@@ -84,3 +84,22 @@ def add_person(request):
             )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def decrypt_all_people(request, contact_no=None):
+    """Decrypt all people's data that are stored as encrypted."""
+
+    if contact_no is not None:
+        try:
+            obj = People.objects.get(contact_no=contact_no)
+            ser = PeopleSerializer(obj)
+            return Response(ser.data, status=status.HTTP_200_OK)
+        except People.DoesNotExist:
+            return Response(
+                {"error": "Person not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+    else:
+        objs = People.objects.all()
+        ser = PeopleSerializer(objs, many=True)
+        return Response(ser.data, status=status.HTTP_200_OK)
